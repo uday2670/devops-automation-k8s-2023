@@ -3,6 +3,15 @@ pipeline {
     tools{
         maven 'm3'
     }
+    	environment {
+		PROJECT_ID = 'stable-device-407915'
+                CLUSTER_NAME = 'autopilot-cluster-1'
+                LOCATION = 'us-central1'
+                CREDENTIALS_ID = 'k8'		
+	}
+	
+
+    
     stages{
         stage('Build Maven'){
             steps{
@@ -10,30 +19,19 @@ pipeline {
                 sh 'mvn clean install'
             }
         }
-        stage('Build docker image'){
-            steps{
-                script{
-                    sh 'docker build -t javatechie/devops-integration .'
-                }
-            }
-        }
-        stage('Push image to Hub'){
-            steps{
-                script{
-                   withCredentials([string(credentialsId: 'dockerhub', variable: 'dockerhub')]) {
-                   sh 'docker login -u uday2670 -p ${dockerhub}'
+      
 
-}
-                   sh 'docker push uday2670/devops-integration'
-                }
-            }
-        }
-        stage('Deploy to k8s'){
-            steps{
-                script{
-                    kubernetesDeploy (configs: 'deploymentservice.yaml',kubeconfigId: 'k8sconfigpwd')
-                }
-            }
-        }
+            stage('Deploy to K8s') {
+		    steps{
+			    echo "Deployment started ..."
+			    sh 'ls -ltr'
+			    sh 'pwd'
+			   
+			    step([$class: 'KubernetesEngineBuilder', projectId: env.PROJECT_ID, clusterName: env.CLUSTER_NAME, location: env.LOCATION, manifestPattern: 'deploymentservice.yml', credentialsId: env.CREDENTIALS_ID, verifyDeployments: true])
+				echo "Start deployment of deployment.yaml"
+			
+		    }
+	    }
     }
+    
 }
